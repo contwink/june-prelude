@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>君君 · 有一份礼物等你</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+
+body {
+    font-family: 'KaiTi', 'STKaiti', '楷体', 'Noto Serif SC', serif;
+    font-size: 18px;
+}
+
+.page {
+    position: fixed; inset: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+}
+.page.hidden { display: none !important; }
+.page.fade-out { animation: fadeUp 1s ease forwards; }
+@keyframes fadeUp { to { opacity: 0; transform: translateY(-50px); } }
+.page.fade-in { animation: fadeIn 0.8s ease both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+.washi-bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+        radial-gradient(ellipse 500px 350px at 85% 10%, rgba(255,200,210,0.25) 0%, transparent 55%),
+        radial-gradient(ellipse 350px 450px at 10% 90%, rgba(255,220,200,0.2) 0%, transparent 50%),
+        radial-gradient(ellipse 200px 200px at 50% 30%, rgba(255,210,190,0.15) 0%, transparent 50%),
+        linear-gradient(160deg, #faf6f0 0%, #f5ede3 30%, #faf0e6 60%, #f8f2ea 100%);
+}
+
+.paper-grain {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.35;
+    background: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+.petal-bg {
+    position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    background:
+        radial-gradient(ellipse 120px 100px at 92% 8%, rgba(255,182,193,0.5) 0%, transparent 65%),
+        radial-gradient(ellipse 90px 80px at 5% 85%, rgba(255,192,203,0.45) 0%, transparent 60%),
+        radial-gradient(ellipse 70px 60px at 78% 65%, rgba(255,200,190,0.4) 0%, transparent 60%),
+        radial-gradient(ellipse 60px 50px at 25% 25%, rgba(255,210,200,0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 55px 45px at 65% 40%, rgba(255,190,180,0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 45px 40px at 45% 75%, rgba(255,182,193,0.3) 0%, transparent 60%),
+        radial-gradient(ellipse 50px 40px at 88% 45%, rgba(255,200,190,0.28) 0%, transparent 60%),
+        radial-gradient(ellipse 40px 35px at 12% 55%, rgba(255,192,203,0.25) 0%, transparent 60%);
+}
+
+.falling-petal {
+    position: fixed; pointer-events: none; z-index: 3;
+    border-radius: 150% 0 150% 0;
+    animation: petalDrift linear infinite;
+    opacity: 0;
+}
+@keyframes petalDrift {
+    0% { opacity: 0; transform: translateY(-30px) rotate(0deg) scale(0.6); }
+    5% { opacity: 0.85; }
+    85% { opacity: 0.6; }
+    100% { opacity: 0; transform: translateY(110vh) rotate(720deg) scale(1); }
+}
+
+.env-scene { z-index: 10; }
+
+.shodou-title {
+    position: absolute; top: 8%;
+    font-size: 42px; color: #8b4513;
+    letter-spacing: 16px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    z-index: 20;
+    animation: shodouFade 2s ease both;
+    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(139,69,19,0.2);
+}
+@keyframes shodouFade {
+    from { opacity: 0; letter-spacing: 32px; }
+    to { opacity: 1; letter-spacing: 16px; }
+}
+
+.fuutou {
+    width: 300px; height: 190px;
+    position: relative; cursor: pointer;
+    z-index: 15;
+    perspective: 600px;
+}
+.fuutou-body {
+    position: absolute; inset: 0;
+    background: linear-gradient(165deg, #dcc8b0 0%, #c9b49c 100%);
+    border-radius: 3px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+    transition: opacity 0.4s ease;
+}
+.fuutou.open .fuutou-body { opacity: 0.35; }
+.fuutou::after {
+    content: ''; position: absolute; bottom: 0; left: 0;
+    width: 100%; height: 42%;
+    background: linear-gradient(165deg, #d0bc9c 0%, #b8a488 100%);
+    clip-path: polygon(0 0, 50% 45%, 100% 0, 100% 100%, 0 100%);
+    z-index: 2;
+    transition: opacity 0.4s ease;
+}
+.fuutou.open::after { opacity: 0.2; z-index: -1; }
+.fuutou-flap {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 58%;
+    background: linear-gradient(165deg, #e4d0b8 0%, #ccbaa0 100%);
+    clip-path: polygon(0 0, 50% 100%, 100% 0);
+    transform-origin: top center;
+    transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 3;
+}
+.fuutou.open .fuutou-flap { transform: rotateX(180deg); opacity: 0.3; }
+
+.houro {
+    position: absolute; top: 46%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px; height: 44px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #c04040, #8b1a2b);
+    border: 2px solid rgba(255,220,200,0.4);
+    z-index: 4;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.fuutou.open .houro { opacity: 0; transition: opacity 0.3s; }
+
+.tegami {
+    position: absolute; top: 8px; left: 5%;
+    width: 90%; height: 90%;
+    background: linear-gradient(180deg, #fffaf5 0%, #fff5f0 100%);
+    border: 1px solid rgba(201,160,96,0.2);
+    border-radius: 2px;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start; justify-content: center;
+    padding: 28px 22px;
+    transition: all 0.7s ease 0.25s;
+    opacity: 0;
+}
+.fuutou.open .tegami {
+    top: -165px;
+    opacity: 1;
+    z-index: 100;
+    height: 360px;
+    box-shadow:
+        1px 1px 0 rgba(201,160,96,0.2),
+        2px 2px 0 rgba(201,160,96,0.16),
+        3px 3px 0 rgba(201,160,96,0.12),
+        4px 4px 0 rgba(201,160,96,0.08),
+        5px 5px 0 rgba(201,160,96,0.05),
+        8px 8px 20px rgba(0,0,0,0.1),
+        0 0 0 1px rgba(201,160,96,0.1) inset;
+    transform: rotate(-0.8deg);
+}
+
+.tegami-text {
+    font-size: 19px; color: #6b4423;
+    line-height: 2.4;
+    text-align: left;
+    opacity: 0;
+    transition: opacity 1s ease 0.6s;
+    letter-spacing: 1px;
+    width: 100%;
+    font-family: 'KaiTi', 'STKaiti', '楷体', 'Noto Serif SC', serif;
+}
+.fuutou.open .tegami-text { opacity: 1; }
+.tegami-text .salutation { display: block; margin-bottom: 4px; }
+.tegami-text .body-line { display: block; text-indent: 2em; margin-bottom: 2px; }
+.tegami-text .sign-off { display: block; text-align: right; margin-top: 16px; text-indent: 0; }
+.tegami-text .cursor {
+    display: inline-block; width: 2px; height: 22px;
+    background: #8b4513; animation: blink 0.8s infinite;
+    vertical-align: middle; margin-left: 2px;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.hint-text {
+    position: absolute; bottom: 15%;
+    font-size: 16px; color: rgba(139,69,19,0.4);
+    letter-spacing: 4px;
+    animation: hintPulse 2.5s ease-in-out infinite;
+    z-index: 20;
+}
+@keyframes hintPulse { 0%,100%{opacity:0.35} 50%{opacity:0.7} }
+
+.mon { z-index: 10; }
+
+.torii-frame {
+    width: 300px; max-width: 88vw;
+    position: relative;
+    z-index: 15;
+}
+.torii-kasagi {
+    height: 16px;
+    background: linear-gradient(180deg, #9b2a3b 0%, #7b1a28 100%);
+    border-radius: 4px 4px 0 0;
+    box-shadow: 0 2px 10px rgba(139,26,43,0.25);
+    position: relative;
+}
+.torii-kasagi::before, .torii-kasagi::after {
+    content: ''; position: absolute; top: -4px;
+    width: 32px; height: 10px;
+    background: linear-gradient(180deg, #ab3a4b, #8b2a38);
+    border-radius: 3px;
+}
+.torii-kasagi::before { left: -10px; }
+.torii-kasagi::after { right: -10px; }
+
+.torii-body {
+    background: linear-gradient(180deg, #faf6f0 0%, #f5ede3 100%);
+    border: 1px solid rgba(201,160,96,0.2);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    padding: 44px 28px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+}
+
+.mon-title {
+    font-size: 24px; color: #8b4513;
+    letter-spacing: 10px; margin-bottom: 32px;
+}
+
+.four-digits {
+    display: flex; gap: 14px; margin-bottom: 24px;
+}
+.four-digits input {
+    width: 58px; height: 70px; border-radius: 10px;
+    border: 2px solid rgba(139,69,19,0.15);
+    background: rgba(255,255,255,0.6);
+    color: #8b4513; font-size: 30px; font-weight: 700;
+    text-align: center; outline: none;
+    font-family: 'KaiTi', '楷体', serif;
+    transition: all 0.3s;
+    caret-color: #c04040;
+}
+.four-digits input:focus {
+    border-color: #c04040;
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 0 12px rgba(192,64,64,0.1);
+}
+.four-digits input.wrong {
+    border-color: #c04040;
+    animation: shake 0.4s ease;
+}
+@keyframes shake {
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+}
+
+.mon-hint {
+    font-size: 15px; color: rgba(139,69,19,0.4);
+    letter-spacing: 2px;
+}
+
+.michi {
+    z-index: 10;
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding: 70px 20px 80px;
+}
+.michi::-webkit-scrollbar { display: none; }
+
+.michi-title {
+    font-size: 28px; color: #8b4513;
+    letter-spacing: 12px; margin-bottom: 44px;
+    margin-top: 16px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.tegami-card {
+    width: 320px; max-width: 88vw;
+    background: linear-gradient(180deg, #fffdf9 0%, #fff9f3 100%);
+    border: 1px solid rgba(201,160,96,0.2);
+    border-radius: 2px;
+    padding: 36px 28px;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(30px) rotate(-0.5deg);
+    transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    box-shadow:
+        1px 1px 0 rgba(201,160,96,0.15),
+        2px 2px 0 rgba(201,160,96,0.12),
+        3px 3px 0 rgba(201,160,96,0.09),
+        4px 4px 0 rgba(201,160,96,0.06),
+        5px 5px 12px rgba(0,0,0,0.08);
+}
+.tegami-card.show {
+    opacity: 1;
+    transform: translateY(0) rotate(-0.5deg);
+}
+.tegami-card.show:hover {
+    transform: translateY(-4px) rotate(-0.3deg) scale(1.01);
+    box-shadow:
+        1px 1px 0 rgba(201,160,96,0.18),
+        2px 2px 0 rgba(201,160,96,0.14),
+        3px 3px 0 rgba(201,160,96,0.11),
+        4px 4px 0 rgba(201,160,96,0.08),
+        5px 5px 0 rgba(201,160,96,0.05),
+        8px 12px 24px rgba(0,0,0,0.12);
+}
+.tegami-card:nth-child(even) {
+    transform: translateY(30px) rotate(0.5deg);
+    box-shadow:
+        -1px 1px 0 rgba(201,160,96,0.15),
+        -2px 2px 0 rgba(201,160,96,0.12),
+        -3px 3px 0 rgba(201,160,96,0.09),
+        -4px 4px 0 rgba(201,160,96,0.06),
+        -5px 5px 12px rgba(0,0,0,0.08);
+}
+.tegami-card:nth-child(even).show {
+    transform: translateY(0) rotate(0.5deg);
+}
+.tegami-card:nth-child(even).show:hover {
+    transform: translateY(-4px) rotate(0.3deg) scale(1.01);
+    box-shadow:
+        -1px 1px 0 rgba(201,160,96,0.18),
+        -2px 2px 0 rgba(201,160,96,0.14),
+        -3px 3px 0 rgba(201,160,96,0.11),
+        -4px 4px 0 rgba(201,160,96,0.08),
+        -5px 5px 0 rgba(201,160,96,0.05),
+        -8px 12px 24px rgba(0,0,0,0.12);
+}
+
+.tegami-card::before {
+    content: ''; position: absolute; top: 20px; bottom: 20px; left: 18px;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(201,160,96,0.15), transparent);
+}
+.tegami-card::after {
+    content: ''; position: absolute; top: -1px; right: -1px;
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, transparent 50%, rgba(201,160,96,0.15) 50%);
+    border-bottom-left-radius: 4px;
+    box-shadow: -2px 2px 4px rgba(0,0,0,0.05);
+}
+.tegami-card .corner-lift {
+    position: absolute; bottom: -1px; left: -1px;
+    width: 20px; height: 20px;
+    background: linear-gradient(-45deg, transparent 50%, rgba(201,160,96,0.1) 50%);
+    border-top-right-radius: 4px;
+}
+
+.tegami-content {
+    font-size: 21px; color: #5a3d2b;
+    line-height: 2.8;
+    text-align: center;
+    letter-spacing: 1px;
+    padding-left: 12px;
+}
+.tegami-content .sign {
+    display: block; margin-top: 16px;
+    font-size: 16px; color: rgba(90,61,43,0.5);
+    letter-spacing: 2px;
+}
+
+.sakura-divider {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, rgba(201,160,96,0.3), rgba(201,160,96,0.05));
+    margin-bottom: 32px;
+    position: relative;
+}
+.sakura-divider::after {
+    content: '\u2736'; position: absolute; bottom: -6px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px; color: rgba(201,160,96,0.35);
+}
+
+.saigo {
+    width: 320px; max-width: 88vw;
+    background: linear-gradient(180deg, #fffdf9 0%, #fff9f3 100%);
+    border: 1px solid rgba(201,160,96,0.2);
+    border-radius: 2px;
+    padding: 40px 28px;
+    text-align: center;
+    margin-top: 12px;
+    opacity: 0;
+    transform: scale(0.92) rotate(-0.3deg);
+    transition: all 0.8s ease;
+    position: relative;
+    box-shadow:
+        1px 1px 0 rgba(201,160,96,0.15),
+        2px 2px 0 rgba(201,160,96,0.12),
+        3px 3px 0 rgba(201,160,96,0.09),
+        4px 4px 0 rgba(201,160,96,0.06),
+        5px 5px 12px rgba(0,0,0,0.08);
+}
+.saigo.show { opacity: 1; transform: scale(1) rotate(-0.3deg); }
+.saigo::before {
+    content: ''; position: absolute; top: -1px; right: -1px;
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, transparent 50%, rgba(201,160,96,0.15) 50%);
+    border-bottom-left-radius: 4px;
+    box-shadow: -2px 2px 4px rgba(0,0,0,0.05);
+}
+
+.saigo-text {
+    font-size: 24px; color: #5a3d2b;
+    line-height: 2.6;
+    margin-bottom: 32px;
+    letter-spacing: 2px;
+}
+
+.iriguchi {
+    display: inline-block; padding: 18px 48px;
+    background: linear-gradient(180deg, #a82e3c 0%, #8b1a28 100%);
+    color: #fff; border: none;
+    font-size: 18px; font-weight: 600; cursor: pointer;
+    font-family: 'KaiTi', '楷体', serif;
+    box-shadow:
+        0 2px 0 #6b1218,
+        0 4px 0 #5a0e12,
+        0 6px 16px rgba(139,26,43,0.35);
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    letter-spacing: 4px;
+    text-decoration: none;
+    position: relative;
+    border-top: 3px solid #c04040;
+}
+.iriguchi::before {
+    content: '';
+    position: absolute;
+    top: -7px; left: -8px; right: -8px;
+    height: 5px;
+    background: linear-gradient(90deg, #9b2a3b, #c04040, #9b2a3b);
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.iriguchi::after {
+    content: '';
+    position: absolute;
+    top: -7px;
+    width: calc(100% + 16px);
+    left: -8px;
+    height: 5px;
+    background: transparent;
+    border-left: 8px solid #b83a4b;
+    border-right: 8px solid #b83a4b;
+    border-radius: 2px;
+    pointer-events: none;
+}
+.iriguchi:hover {
+    transform: translateY(-2px) scale(1.04);
+    background: linear-gradient(180deg, #b83a4b 0%, #9b2a3b 100%);
+    box-shadow:
+        0 3px 0 #6b1218,
+        0 5px 0 #5a0e12,
+        0 8px 24px rgba(139,26,43,0.4);
+}
+.iriguchi:active {
+    transform: translateY(3px);
+    box-shadow:
+        0 0 0 #6b1218,
+        0 1px 0 #5a0e12,
+        0 2px 8px rgba(139,26,43,0.3);
+}
+
+.tategaki-deco {
+    position: absolute;
+    top: 50%;
+    right: 24px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    animation: tategakiFade 1.5s ease 0.5s both;
+}
+@keyframes tategakiFade {
+    from { opacity: 0; transform: translateY(-40%); }
+    to { opacity: 0.35; transform: translateY(-50%); }
+}
+.tategaki-deco span {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-size: 14px;
+    color: #9b2a3b;
+    letter-spacing: 2px;
+    font-family: 'KaiTi', 'STKaiti', '楷体', 'Noto Serif SC', serif;
+    line-height: 1;
+}
+.tategaki-deco::before {
+    content: '';
+    position: absolute;
+    top: -20px; bottom: -20px; left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(155,42,59,0.25), transparent);
+}
+
+.nihongo-sub {
+    font-size: 13px;
+    color: rgba(155,42,59,0.45);
+    letter-spacing: 3px;
+    margin-bottom: 28px;
+    margin-top: -8px;
+    font-family: 'KaiTi', 'STKaiti', '楷体', serif;
+    opacity: 0;
+    animation: nihongoFade 1s ease 0.3s both;
+}
+@keyframes nihongoFade {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.scroll-hint {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px; color: rgba(139,69,19,0.35);
+    letter-spacing: 2px;
+    animation: scrollBounce 2s ease-in-out infinite;
+    pointer-events: none; z-index: 50;
+}
+@keyframes scrollBounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+@media (max-width: 500px) {
+    .shodou-title { font-size: 34px; letter-spacing: 10px; }
+    .tegami-text { font-size: 18px; }
+    .tegami-content { font-size: 19px; }
+    .mon-title { font-size: 20px; }
+    .michi-title { font-size: 24px; }
+    .saigo-text { font-size: 21px; }
+    .four-digits input { width: 50px; height: 60px; font-size: 26px; }
+    .fuutou { width: 260px; height: 165px; }
+    .tategaki-deco { display: none; }
+    .iriguchi { padding: 16px 36px; letter-spacing: 2px; }
+    .nihongo-sub { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<div class="washi-bg"></div>
+<div class="paper-grain"></div>
+<div class="petal-bg"></div>
+
+<div class="page env-scene" id="page1">
+    <div class="shodou-title">君君亲启</div>
+    <div class="fuutou" id="fuutou">
+        <div class="fuutou-flap"></div>
+        <div class="fuutou-body"></div>
+        <div class="houro">&#10047;</div>
+        <div class="tegami">
+            <div class="tegami-text" id="tegamiText"></div>
+        </div>
+    </div>
+    <div class="hint-text" id="hint1">&#9757; 轻触信封</div>
+</div>
+
+<div class="page mon hidden" id="page2">
+    <div class="torii-frame" id="toriiFrame">
+        <div class="torii-kasagi"></div>
+        <div class="torii-body">
+            <div class="mon-title">君君专属</div>
+            <div class="four-digits" id="fourDigits">
+                <input type="text" maxlength="1" data-idx="0" inputmode="numeric" autocomplete="off">
+                <input type="text" maxlength="1" data-idx="1" inputmode="numeric" autocomplete="off">
+                <input type="text" maxlength="1" data-idx="2" inputmode="numeric" autocomplete="off">
+                <input type="text" maxlength="1" data-idx="3" inputmode="numeric" autocomplete="off">
+            </div>
+            <div class="mon-hint">提示：你的生日月份和日期</div>
+        </div>
+    </div>
+</div>
+
+<div class="page michi hidden" id="page3">
+    <div class="michi-title">通往你的路</div>
+    <div class="sakura-divider"></div>
+    <div class="tegami-card" id="t1">
+        <div class="corner-lift"></div>
+        <div class="tegami-content">
+            2026年<br>我遇见了一个人<br>她叫君君<br><span class="sign">-- CW</span>
+        </div>
+    </div>
+    <div class="sakura-divider"></div>
+    <div class="tegami-card" id="t2">
+        <div class="corner-lift"></div>
+        <div class="tegami-content">
+            她说喜欢吃巧克力<br>她说喜欢樱花<br>她说喜欢我......
+        </div>
+    </div>
+    <div class="sakura-divider"></div>
+    <div class="tegami-card" id="t3">
+        <div class="corner-lift"></div>
+        <div class="tegami-content">
+            6月2日，桔梗花开<br>花语是：永恒的爱<br>这也是我想对你说的话<br><span class="sign">-- CW</span>
+        </div>
+    </div>
+    <div class="sakura-divider"></div>
+    <div class="tegami-card" id="t4">
+        <div class="corner-lift"></div>
+        <div class="tegami-content">
+            花之舞，为你而奏<br>每一个音符<br>都是我想你的心跳
+        </div>
+    </div>
+    <div class="sakura-divider"></div>
+    <div class="tegami-card" id="t5">
+        <div class="corner-lift"></div>
+        <div class="tegami-content">
+            从广东到日本<br>距离再远<br>也想你
+        </div>
+    </div>
+    <div class="sakura-divider"></div>
+    <div class="tategaki-deco">
+        <span>君</span><span>へ</span><span>の</span><span>贈</span><span>り</span><span>物</span>
+    </div>
+    <div class="saigo" id="saigo">
+        <div class="saigo-text">我们一起走这段路吧</div>
+        <div class="nihongo-sub">君への誕生日プレゼント</div>
+        <a href="https://你的用户名.github.io/june-birthday" class="iriguchi" id="iriguchi">&#10047; 进入 June 的世界</a>
+    </div>
+    <div style="height: 60px;"></div>
+</div>
+
+<div class="scroll-hint" id="scrollHint" style="display:none;">&#8595; 向下 scroll</div>
+
+<script>
+const BIRTHDAY_URL = 'https://contwink.github.io/gift/';
+document.getElementById('iriguchi').href = BIRTHDAY_URL;
+
+function createPetals() {
+    const colors = ['#ffb6c1', '#ffc0cb', '#ffd4dc', '#f0a0b0', '#ffb6c1', '#ffc0cb'];
+    for (let i = 0; i < 40; i++) {
+        const p = document.createElement('div');
+        p.className = 'falling-petal';
+        const s = Math.random() * 10 + 8;
+        const dur = Math.random() * 6 + 6;
+        const delay = Math.random() * 12;
+        const left = Math.random() * 105 - 2;
+        p.style.cssText = `width:${s}px;height:${s}px;left:${left}vw;background:${colors[Math.floor(Math.random()*colors.length)]};animation-duration:${dur}s;animation-delay:${delay}s;`;
+        document.body.appendChild(p);
+    }
+}
+createPetals();
+
+const fuutou = document.getElementById('fuutou');
+const tegamiText = document.getElementById('tegamiText');
+const hint1 = document.getElementById('hint1');
+let opened = false;
+
+const letterParts = [
+    { type: 'salutation', text: '君君：' },
+    { type: 'body', text: '这是一份，只属于26岁的你的礼物。' },
+    { type: 'body', text: '每一步都属于你。' },
+    { type: 'body', text: '准备好了吗？' },
+    { type: 'sign', text: '-- CW' }
+];
+let pi = 0, ci = 0, th = '';
+
+function typeChar() {
+    if (pi >= letterParts.length) {
+        tegamiText.innerHTML = th + '<span class="cursor"></span>';
+        setTimeout(() => goPage2(), 2200);
+        return;
+    }
+    const part = letterParts[pi];
+    if (ci === 0) {
+        if (pi === 0) th += '<span class="salutation">';
+        else if (part.type === 'body') th += '<span class="body-line">';
+        else if (part.type === 'sign') th += '<span class="sign-off">';
+    }
+    if (ci < part.text.length) {
+        th += part.text[ci]; ci++;
+        tegamiText.innerHTML = th + '</span><span class="cursor"></span>';
+        setTimeout(typeChar, 55 + Math.random() * 30);
+    } else {
+        th += '</span>';
+        pi++; ci = 0;
+        if (part.type === 'body' && pi < letterParts.length && letterParts[pi].type === 'sign') {
+            th += '<br>';
+        }
+        setTimeout(typeChar, 200);
+    }
+}
+
+fuutou.addEventListener('click', () => {
+    if (opened) return;
+    opened = true;
+    fuutou.classList.add('open');
+    hint1.style.display = 'none';
+    setTimeout(typeChar, 450);
+});
+
+function goPage2() {
+    const p1 = document.getElementById('page1');
+    p1.classList.add('fade-out');
+    setTimeout(() => {
+        p1.classList.add('hidden');
+        p1.classList.remove('fade-out');
+        const p2 = document.getElementById('page2');
+        p2.classList.remove('hidden');
+        p2.classList.add('fade-in');
+        setTimeout(() => p2.classList.remove('fade-in'), 800);
+        document.querySelector('.four-digits input').focus();
+    }, 1000);
+}
+
+const digits = document.querySelectorAll('.four-digits input');
+const CORRECT = ['0','6','0','2'];
+
+digits.forEach((input, i) => {
+    input.addEventListener('input', (e) => {
+        const v = e.target.value;
+        if (!v) return;
+        if (!/^\d$/.test(v)) { e.target.value = ''; return; }
+        input.classList.remove('wrong');
+        if (i < 3) digits[i + 1].focus();
+        else checkPass();
+    });
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && i > 0) digits[i - 1].focus();
+    });
+});
+
+function checkPass() {
+    const entered = Array.from(digits).map(d => d.value);
+    if (entered.join('') === CORRECT.join('')) {
+        document.getElementById('toriiFrame').style.animation = 'fadeUp 0.8s ease forwards';
+        setTimeout(() => goPage3(), 700);
+    } else {
+        digits.forEach(d => { d.value = ''; d.classList.add('wrong'); });
+        setTimeout(() => {
+            digits.forEach(d => d.classList.remove('wrong'));
+            digits[0].focus();
+        }, 600);
+    }
+}
+
+function goPage3() {
+    const p2 = document.getElementById('page2');
+    p2.classList.add('fade-out');
+    setTimeout(() => {
+        p2.classList.add('hidden');
+        p2.classList.remove('fade-out');
+        const p3 = document.getElementById('page3');
+        p3.classList.remove('hidden');
+        p3.classList.add('fade-in');
+        setTimeout(() => p3.classList.remove('fade-in'), 800);
+        setTimeout(() => {
+            document.getElementById('t1').classList.add('show');
+            document.getElementById('scrollHint').style.display = 'block';
+        }, 400);
+    }, 1000);
+}
+
+const michi = document.getElementById('page3');
+michi.addEventListener('scroll', () => {
+    const sy = michi.scrollTop;
+    const vh = window.innerHeight;
+    ['t2','t3','t4','t5','saigo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (sy + vh * 0.75 > el.offsetTop) el.classList.add('show');
+    });
+    if (sy + vh * 0.8 > document.getElementById('saigo').offsetTop) {
+        document.getElementById('scrollHint').style.display = 'none';
+    }
+});
+</script>
+</body>
+</html>
