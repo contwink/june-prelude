@@ -170,7 +170,7 @@ body {
 .fuutou.open .tegami-text { opacity: 1; }
 .tegami-text .salutation { display: block; margin-bottom: 4px; }
 .tegami-text .body-line { display: block; text-indent: 2em; margin-bottom: 2px; }
-.tegami-text .sign-off { display: block; text-align: right; margin-top: 16px; text-indent: 0; }
+.tegami-text .sign-off { display: block; text-align: right; margin-top: 6px; text-indent: 0; font-family: 'Brush Script MT', 'Dancing Script', cursive; font-style: italic; font-size: 17px; }
 .tegami-text .cursor {
     display: inline-block; width: 2px; height: 22px;
     background: #8b4513; animation: blink 0.8s infinite;
@@ -256,6 +256,47 @@ body {
 .mon-hint {
     font-size: 15px; color: rgba(139,69,19,0.4);
     letter-spacing: 2px;
+}
+
+/* 密码正确金色涟漪 */
+.success-ripple {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,160,96,0.6), transparent 70%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0;
+}
+.success-ripple.active {
+    animation: rippleSpread 0.8s ease-out forwards;
+}
+@keyframes rippleSpread {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(40); }
+}
+
+/* 信纸卡片序号印章 */
+.card-seal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    border: 2px solid #c04040;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #c04040;
+    font-family: 'KaiTi', 'STKaiti', '楷体', serif;
+    opacity: 0.6;
+    transform: rotate(-5deg);
+    pointer-events: none;
 }
 
 .michi {
@@ -355,9 +396,11 @@ body {
     padding-left: 12px;
 }
 .tegami-content .sign {
-    display: block; margin-top: 16px;
-    font-size: 16px; color: rgba(90,61,43,0.5);
-    letter-spacing: 2px;
+    display: block; margin-top: 6px;
+    font-size: 17px; color: rgba(90,61,43,0.5);
+    letter-spacing: 1px;
+    font-family: 'Brush Script MT', 'Dancing Script', cursive;
+    font-style: italic;
 }
 
 .sakura-divider {
@@ -559,6 +602,7 @@ body {
 <div class="page mon hidden" id="page2">
     <div class="torii-frame" id="toriiFrame">
         <div class="torii-kasagi"></div>
+        <div class="success-ripple" id="successRipple"></div>
         <div class="torii-body">
             <div class="mon-title">君君专属</div>
             <div class="four-digits" id="fourDigits">
@@ -576,6 +620,7 @@ body {
     <div class="michi-title">通往你的路</div>
     <div class="sakura-divider"></div>
     <div class="tegami-card" id="t1">
+        <div class="card-seal">壱</div>
         <div class="corner-lift"></div>
         <div class="tegami-content">
             2026年<br>我遇见了一个人<br>她叫君君<br><span class="sign">-- CW</span>
@@ -583,13 +628,15 @@ body {
     </div>
     <div class="sakura-divider"></div>
     <div class="tegami-card" id="t2">
+        <div class="card-seal">弐</div>
         <div class="corner-lift"></div>
         <div class="tegami-content">
-            她说喜欢吃巧克力<br>她说喜欢樱花<br>她说喜欢我......
+            她说喜欢吃巧克力<br>她说喜欢荷花<br>她说喜欢我......
         </div>
     </div>
     <div class="sakura-divider"></div>
     <div class="tegami-card" id="t3">
+        <div class="card-seal">参</div>
         <div class="corner-lift"></div>
         <div class="tegami-content">
             6月2日，桔梗花开<br>花语是：永恒的爱<br>这也是我想对你说的话<br><span class="sign">-- CW</span>
@@ -597,6 +644,7 @@ body {
     </div>
     <div class="sakura-divider"></div>
     <div class="tegami-card" id="t4">
+        <div class="card-seal">肆</div>
         <div class="corner-lift"></div>
         <div class="tegami-content">
             花之舞，为你而奏<br>每一个音符<br>都是我想你的心跳
@@ -604,6 +652,7 @@ body {
     </div>
     <div class="sakura-divider"></div>
     <div class="tegami-card" id="t5">
+        <div class="card-seal">伍</div>
         <div class="corner-lift"></div>
         <div class="tegami-content">
             从广东到日本<br>距离再远<br>也想你
@@ -724,8 +773,13 @@ digits.forEach((input, i) => {
 function checkPass() {
     const entered = Array.from(digits).map(d => d.value);
     if (entered.join('') === CORRECT.join('')) {
-        document.getElementById('toriiFrame').style.animation = 'fadeUp 0.8s ease forwards';
-        setTimeout(() => goPage3(), 700);
+        // 手机微震 + 金色涟漪扩散
+        navigator.vibrate && navigator.vibrate(50);
+        document.getElementById('successRipple').classList.add('active');
+        setTimeout(() => {
+            document.getElementById('toriiFrame').style.animation = 'fadeUp 0.8s ease forwards';
+            setTimeout(() => goPage3(), 700);
+        }, 600);
     } else {
         digits.forEach(d => { d.value = ''; d.classList.add('wrong'); });
         setTimeout(() => {
